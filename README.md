@@ -5,6 +5,11 @@ Experimental Linux voice assistant for [Home Assistant][homeassistant] that uses
 Runs on Linux `aarch64` and `x86_64` platforms. Tested with Python 3.13 and Python 3.11.
 Supports announcments, start/continue conversation, and timers.
 
+## Updates
+- Add porcupine4 wake word
+- Add threshold for openWakeWord (settings in JSON config file)
+- Play wake sound when continue conversation
+
 ## Installation
 
 Install system dependencies (`apt-get`):
@@ -16,7 +21,7 @@ Install system dependencies (`apt-get`):
 Clone and install project:
 
 ``` sh
-git clone https://github.com/OHF-Voice/linux-voice-assistant.git
+git clone https://github.com/PyanSofyan/linux-voice-assistant.git
 cd linux-voice-assistant
 script/setup
 ```

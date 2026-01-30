@@ -17,6 +17,7 @@ from pyopen_wakeword import OpenWakeWord, OpenWakeWordFeatures
 
 from .models import AvailableWakeWord, Preferences, ServerState, WakeWordType
 from .mpv_player import MpvMediaPlayer
+from .porcupine_wakeword import PorcupineWakeWord
 from .satellite import VoiceSatelliteProtocol
 from .util import get_mac
 from .zeroconf import HomeAssistantZeroconf
@@ -173,6 +174,10 @@ async def main() -> None:
                     wake_word=model_config["wake_word"],
                     trained_languages=model_config.get("trained_languages", []),
                     wake_word_path=wake_word_path,
+                    threshold=model_config.get("threshold", 0.5),
+                    language=model_config.get("language"),
+                    system=model_config.get("system"),
+                    access_key=model_config.get("access_key"),
                 )
 
     _LOGGER.debug("Available wake words: %s", list(sorted(available_wake_words.keys())))
@@ -287,13 +292,14 @@ async def main() -> None:
 def process_audio(state: ServerState, mic, block_size: int):
     """Process audio chunks from the microphone."""
 
-    wake_words: List[Union[MicroWakeWord, OpenWakeWord]] = []
+    wake_words: List[Union[MicroWakeWord, OpenWakeWord, PorcupineWakeWord]] = []
     micro_features: Optional[MicroWakeWordFeatures] = None
     micro_inputs: List[np.ndarray] = []
 
     oww_features: Optional[OpenWakeWordFeatures] = None
     oww_inputs: List[np.ndarray] = []
     has_oww = False
+    has_porcupine = False
 
     last_active: Optional[float] = None
 
@@ -321,9 +327,12 @@ def process_audio(state: ServerState, mic, block_size: int):
                     ]
 
                     has_oww = False
+                    has_porcupine = False
                     for wake_word in wake_words:
                         if isinstance(wake_word, OpenWakeWord):
                             has_oww = True
+                        elif isinstance(wake_word, PorcupineWakeWord):
+                            has_porcupine = True
 
                     if micro_features is None:
                         micro_features = MicroWakeWordFeatures()
@@ -352,8 +361,12 @@ def process_audio(state: ServerState, mic, block_size: int):
                         elif isinstance(wake_word, OpenWakeWord):
                             for oww_input in oww_inputs:
                                 for prob in wake_word.process_streaming(oww_input):
-                                    if prob > 0.5:
+                                    _LOGGER.debug("Probability: %f",prob)
+                                    if prob > wake_word.threshold:
                                         activated = True
+                        elif isinstance(wake_word, PorcupineWakeWord):
+                            if wake_word.process_streaming(audio_chunk):
+                                activated = True
 
                         if activated and not state.muted:
                             # Check refractory

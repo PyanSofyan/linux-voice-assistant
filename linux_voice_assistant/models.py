@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .entity import ESPHomeEntity, MediaPlayerEntity
     from .entity import ESPHomeEntity, MediaPlayerEntity, MuteSwitchEntity, ThinkingSoundEntity
     from .mpv_player import MpvMediaPlayer
+    from .porcupine_wakeword import PorcupineWakeWord
     from .satellite import VoiceSatelliteProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 class WakeWordType(str, Enum):
     MICRO_WAKE_WORD = "micro"
     OPEN_WAKE_WORD = "openWakeWord"
+    PORCUPINE = "porcupine"
 
 
 @dataclass
@@ -32,8 +34,12 @@ class AvailableWakeWord:
     wake_word: str
     trained_languages: List[str]
     wake_word_path: Path
+    threshold: float
+    language: Optional[str] = None  # For Porcupine
+    system: Optional[str] = None    # For Porcupine (linux or raspberry-pi)
+    access_key: Optional[str] = None  # For Porcupine
 
-    def load(self) -> "Union[MicroWakeWord, OpenWakeWord]":
+    def load(self) -> "Union[MicroWakeWord, OpenWakeWord, PorcupineWakeWord]":
         if self.type == WakeWordType.MICRO_WAKE_WORD:
             from pymicro_wakeword import MicroWakeWord
 
@@ -46,6 +52,13 @@ class AvailableWakeWord:
             setattr(oww_model, "wake_word", self.wake_word)
 
             return oww_model
+
+        if self.type == WakeWordType.PORCUPINE:
+            from .porcupine_wakeword import PorcupineWakeWord
+
+            return PorcupineWakeWord.from_config(
+                config_path=self.wake_word_path, base_path=self.wake_word_path.parent
+            )
 
         raise ValueError(f"Unexpected wake word type: {self.type}")
 
@@ -62,7 +75,7 @@ class ServerState:
     audio_queue: "Queue[Optional[bytes]]"
     entities: "List[ESPHomeEntity]"
     available_wake_words: "Dict[str, AvailableWakeWord]"
-    wake_words: "Dict[str, Union[MicroWakeWord, OpenWakeWord]]"
+    wake_words: "Dict[str, Union[MicroWakeWord, OpenWakeWord, PorcupineWakeWord]]"
     active_wake_words: Set[str]
     stop_word: "MicroWakeWord"
     music_player: "MpvMediaPlayer"

@@ -446,13 +446,18 @@ class VoiceSatelliteProtocol(APIServer):
         self.send_messages([VoiceAssistantAnnounceFinished()])
 
         if self._continue_conversation:
-            self.send_messages([VoiceAssistantRequest(start=True)])
-            self._is_streaming_audio = True
-            _LOGGER.debug("Continuing conversation")
+            self.state.tts_player.play(
+                self.state.wakeup_sound,
+                done_callback=self._start_continue_conversation
+            )
         else:
             self.unduck()
 
         _LOGGER.debug("TTS response finished")
+
+    def _start_continue_conversation(self) -> None:
+        self.send_messages([VoiceAssistantRequest(start=True)])
+        self._is_streaming_audio = True
 
     def _play_timer_finished(self) -> None:
         if not self._timer_finished:

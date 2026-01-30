@@ -1,0 +1,9 @@
+{
+  "type": "porcupine",
+  "wake_word": "Hey Devai",
+  "threshold": 0.5,
+  "model": "hey-div-ai.ppn",
+  "language": "en",
+  "system": "raspberry-pi",
+  "access_key": "YOUR_ACCESS_KEY"
+}
