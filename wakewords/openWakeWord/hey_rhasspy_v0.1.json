@@ -1,6 +1,6 @@
 {
   "type": "openWakeWord",
   "wake_word": "Hey Rhasspy",
-  "threshold": 0.8,
+  "threshold": 0.5,
   "model": "hey_rhasspy_v0.1.tflite"
 }

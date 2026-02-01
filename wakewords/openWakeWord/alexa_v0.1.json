@@ -1,6 +1,6 @@
 {
   "type": "openWakeWord",
   "wake_word": "Alexa",
-  "threshold": 0.8,
+  "threshold": 0.5,
   "model": "alexa_v0.1.tflite"
 }

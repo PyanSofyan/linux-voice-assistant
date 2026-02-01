@@ -299,7 +299,7 @@ def process_audio(state: ServerState, mic, block_size: int):
     oww_features: Optional[OpenWakeWordFeatures] = None
     oww_inputs: List[np.ndarray] = []
     has_oww = False
-    has_porcupine = False
+    
 
     last_active: Optional[float] = None
 
@@ -327,12 +327,9 @@ def process_audio(state: ServerState, mic, block_size: int):
                     ]
 
                     has_oww = False
-                    has_porcupine = False
                     for wake_word in wake_words:
                         if isinstance(wake_word, OpenWakeWord):
                             has_oww = True
-                        elif isinstance(wake_word, PorcupineWakeWord):
-                            has_porcupine = True
 
                     if micro_features is None:
                         micro_features = MicroWakeWordFeatures()
@@ -359,10 +356,12 @@ def process_audio(state: ServerState, mic, block_size: int):
                                 if wake_word.process_streaming(micro_input):
                                     activated = True
                         elif isinstance(wake_word, OpenWakeWord):
+                            available_ww = state.available_wake_words.get(wake_word.id)
+                            threshold = available_ww.threshold if available_ww else 0.5
                             for oww_input in oww_inputs:
                                 for prob in wake_word.process_streaming(oww_input):
-                                    _LOGGER.debug("Probability: %f",prob)
-                                    if prob > wake_word.threshold:
+                                    if prob > threshold:
+                                        _LOGGER.debug("Probability: %f",prob)
                                         activated = True
                         elif isinstance(wake_word, PorcupineWakeWord):
                             if wake_word.process_streaming(audio_chunk):
