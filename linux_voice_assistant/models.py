@@ -12,8 +12,12 @@ if TYPE_CHECKING:
     from pymicro_wakeword import MicroWakeWord
     from pyopen_wakeword import OpenWakeWord
 
-    from .entity import ESPHomeEntity, MediaPlayerEntity
-    from .entity import ESPHomeEntity, MediaPlayerEntity, MuteSwitchEntity, ThinkingSoundEntity
+    from .entity import (
+        ESPHomeEntity,
+        MediaPlayerEntity,
+        MuteSwitchEntity,
+        ThinkingSoundEntity,
+    )
     from .mpv_player import MpvMediaPlayer
     from .porcupine_wakeword import PorcupineWakeWord
     from .satellite import VoiceSatelliteProtocol
@@ -66,12 +70,19 @@ class AvailableWakeWord:
 @dataclass
 class Preferences:
     active_wake_words: List[str] = field(default_factory=list)
+    volume: Optional[float] = None
     thinking_sound: int = 0  # 0 = disabled, 1 = enabled
+
 
 @dataclass
 class ServerState:
     name: str
+    friendly_name: str
     mac_address: str
+    ip_address: str
+    network_interface: str
+    version: str
+    esphome_version: str
     audio_queue: "Queue[Optional[bytes]]"
     entities: "List[ESPHomeEntity]"
     available_wake_words: "Dict[str, AvailableWakeWord]"
@@ -84,7 +95,7 @@ class ServerState:
     processing_sound: str
     timer_finished_sound: str
     mute_sound: str
-    unmute_sound: str      
+    unmute_sound: str
     preferences: Preferences
     preferences_path: Path
     download_dir: Path
@@ -98,7 +109,8 @@ class ServerState:
     thinking_sound_enabled: bool = False
     muted: bool = False
     connected: bool = False
-    
+    volume: float = 1.0
+
     def save_preferences(self) -> None:
         """Save preferences as JSON."""
         _LOGGER.debug("Saving preferences: %s", self.preferences_path)
@@ -107,3 +119,22 @@ class ServerState:
             json.dump(
                 asdict(self.preferences), preferences_file, ensure_ascii=False, indent=4
             )
+
+    def persist_volume(self, volume: float) -> None:
+        """Persist the normalized media volume (0.0 - 1.0)."""
+        clamped_volume = max(0.0, min(1.0, volume))
+        _LOGGER.debug(f"persist_volume called: new={clamped_volume}, current={self.volume}, prefs={self.preferences.volume}")
+
+        if (
+            abs(self.volume - clamped_volume) < 0.0001
+            and self.preferences.volume is not None
+            and abs(self.preferences.volume - clamped_volume) < 0.0001
+        ):
+            _LOGGER.debug("Skipping save - volume unchanged")
+            return
+
+        self.volume = clamped_volume
+        self.preferences.volume = clamped_volume
+        _LOGGER.info(f"Saving volume {clamped_volume} to {self.preferences_path}")
+        self.save_preferences()
+        _LOGGER.info(f"Volume saved successfully")

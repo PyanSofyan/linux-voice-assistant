@@ -18,3 +18,8 @@ venv/
 /dist/
 /preferences.json
 /local/
+
+# Docker
+.env
+version.txt
+version_githash.txt
