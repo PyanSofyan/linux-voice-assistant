@@ -1,3 +1,4 @@
+import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from typing import Callable, List, Optional, Union
@@ -73,7 +74,7 @@ class MediaPlayerEntity(ESPHomeEntity):
         self.music_player = music_player
         self.announce_player = announce_player
         self._on_volume_changed = on_volume_changed
-        self.apply_volume_from_state(initial_volume)         
+        self.apply_volume_from_state(initial_volume)
         self._log = logging.getLogger(f"{self.__class__.__name__}[{self.key}]")
 
     def play(
@@ -89,18 +90,14 @@ class MediaPlayerEntity(ESPHomeEntity):
                 self.music_player.pause()
                 self.announce_player.play(
                     url,
-                    done_callback=lambda: call_all(
-                        self.music_player.resume, done_callback
-                    ),
+                    done_callback=lambda: call_all(self.music_player.resume, done_callback),
                 )
             else:
                 # Announce, idle
                 self.announce_player.play(
                     url,
                     done_callback=lambda: call_all(
-                        self.server.send_messages(
-                            [self._update_state(MediaPlayerState.IDLE)]
-                        ),
+                        self.server.send_messages([self._update_state(MediaPlayerState.IDLE)]),
                         done_callback,
                     ),
                 )
@@ -110,9 +107,7 @@ class MediaPlayerEntity(ESPHomeEntity):
             self.music_player.play(
                 url,
                 done_callback=lambda: call_all(
-                    self.server.send_messages(
-                        [self._update_state(MediaPlayerState.IDLE)]
-                    ),
+                    self.server.send_messages([self._update_state(MediaPlayerState.IDLE)]),
                     done_callback,
                 ),
             )
@@ -245,6 +240,7 @@ class MediaPlayerEntity(ESPHomeEntity):
         if self._on_volume_changed and persist:
             self._on_volume_changed(normalized)
 
+
 # -----------------------------------------------------------------------------
 
 
@@ -322,9 +318,7 @@ class ThinkingSoundEntity(ESPHomeEntity):
         self._set_thinking_sound_enabled = set_thinking_sound_enabled
         self._switch_state = self._get_thinking_sound_enabled()  # Sync internal state
 
-    def update_get_thinking_sound_enabled(
-        self, get_thinking_sound_enabled: Callable[[], bool]
-    ) -> None:
+    def update_get_thinking_sound_enabled(self, get_thinking_sound_enabled: Callable[[], bool]) -> None:
         # Update the callback used to read the thinking sound enabled state.
         self._get_thinking_sound_enabled = get_thinking_sound_enabled
 
